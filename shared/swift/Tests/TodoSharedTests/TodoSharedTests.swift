@@ -83,6 +83,20 @@ final class TodoSharedTests: XCTestCase {
         XCTAssertEqual(selection.mostImportant?.id, "important")
         XCTAssertEqual(selection.mostUrgent?.id, "urgent")
     }
+
+    func testSyncContractsUseServerVersionSnakeCase() throws {
+        let decoder = JSONDecoder.todoSharedDecoder()
+        let changes = try decoder.decode(TaskChanges.self, from: Data("""
+        {"tasks":[],"server_version":42}
+        """.utf8))
+        XCTAssertEqual(changes.serverVersion, 42)
+
+        let result = try decoder.decode(SyncResult.self, from: Data("""
+        {"acknowledged_operation_ids":["op-1"],"tasks":[],"server_version":43}
+        """.utf8))
+        XCTAssertEqual(result.acknowledgedOperationIDs, ["op-1"])
+        XCTAssertEqual(result.serverVersion, 43)
+    }
 }
 
 private final class FakeTodoAPIClient: TodoAPIClient, @unchecked Sendable {
@@ -100,15 +114,15 @@ private final class FakeTodoAPIClient: TodoAPIClient, @unchecked Sendable {
         []
     }
 
-    func fetchTaskChanges(since: Date?, session: AuthSession) async throws -> TaskChanges {
-        TaskChanges(tasks: [])
+    func fetchTaskChanges(sinceVersion: Int64, session: AuthSession) async throws -> TaskChanges {
+        TaskChanges(tasks: [], serverVersion: sinceVersion)
     }
 
     func syncTasks(operations: [SyncOperation], session: AuthSession) async throws -> SyncResult {
         if let syncError {
             throw syncError
         }
-        return SyncResult(acknowledgedOperationIDs: operations.map(\.id))
+        return SyncResult(acknowledgedOperationIDs: operations.map(\.id), serverVersion: 1)
     }
 }
 

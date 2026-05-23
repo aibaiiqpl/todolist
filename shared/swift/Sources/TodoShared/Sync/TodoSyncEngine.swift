@@ -38,8 +38,8 @@ public struct TodoSyncEngine: Sendable {
         )
     }
 
-    public func pullChanges(since: Date?, session: AuthSession) async throws -> TaskChanges {
-        let changes = try await apiClient.fetchTaskChanges(since: since, session: session)
+    public func pullChanges(sinceVersion: Int64, session: AuthSession) async throws -> TaskChanges {
+        let changes = try await apiClient.fetchTaskChanges(sinceVersion: sinceVersion, session: session)
         try await repository.applyRemoteTasks(changes.tasks)
         return changes
     }

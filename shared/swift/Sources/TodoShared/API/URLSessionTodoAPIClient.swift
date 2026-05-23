@@ -37,13 +37,11 @@ public final class URLSessionTodoAPIClient: TodoAPIClient, @unchecked Sendable {
         return response.drafts
     }
 
-    public func fetchTaskChanges(since: Date?, session: AuthSession) async throws -> TaskChanges {
+    public func fetchTaskChanges(sinceVersion: Int64, session: AuthSession) async throws -> TaskChanges {
         var components = URLComponents(url: endpointURL("tasks/changes"), resolvingAgainstBaseURL: false)
-        if let since {
-            components?.queryItems = [
-                URLQueryItem(name: "since", value: ISO8601DateFormatter().string(from: since))
-            ]
-        }
+        components?.queryItems = [
+            URLQueryItem(name: "since_version", value: String(sinceVersion))
+        ]
         guard let url = components?.url else {
             throw TodoAPIError.invalidURL
         }
