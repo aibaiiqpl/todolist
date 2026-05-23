@@ -3,7 +3,7 @@
 ## 架构
 
 - iPhone App、macOS 菜单栏 App 和 iPhone Widget 通过共享 Swift 核心复用任务模型、API client、本地存储和同步队列。
-- Go 后端提供 REST JSON API，连接 Postgres，代理 DeepSeek，并负责 Apple 登录校验、JWT 签发和用户数据隔离。
+- Go 后端提供 REST JSON API，默认连接 SQLite 方便本地开发，保留 Postgres 作为后续生产存储，代理 DeepSeek，并负责 Apple 登录校验、JWT 签发和用户数据隔离。
 - DeepSeek API key 只保存在后端环境变量中，客户端不得持有。
 
 ## 账号与安全
@@ -44,7 +44,9 @@
 | 配置项 | 组件 | 推荐默认值 | 选择理由 |
 | --- | --- | --- | --- |
 | `ADDR` | 后端 | `:8080` | 本地和裸机部署都可直接启动，生产可由 systemd 环境文件覆盖。 |
-| `DATABASE_URL` | 后端 | 空，启动失败 | 数据库地址不能安全猜测，缺失时必须 fail-fast，避免写入错误数据库。 |
+| `DATABASE_DRIVER` | 后端 | `sqlite` | 第一版本地开发优先简单可运行；后续设为 `postgres` 可切回 Postgres。 |
+| `SQLITE_PATH` | 后端 | `todolist.sqlite` | 本地无需安装数据库服务；文件路径可由部署环境覆盖。 |
+| `DATABASE_URL` | 后端 | 空，仅 Postgres 必填 | SQLite 不需要该项；切到 Postgres 时必须显式配置，避免写入错误数据库。 |
 | `JWT_SECRET` | 后端 | 空，启动失败 | JWT 签名密钥必须由部署环境提供，仓库不能提供可复用默认密钥。 |
 | `APPLE_BUNDLE_IDS` | 后端 | 空，启动失败 | Apple identity token 的 audience 必须显式覆盖 iOS 与 macOS 客户端。 |
 | `APPLE_BUNDLE_ID` | 后端 | 不设置 | 仅作为单客户端旧配置兼容入口；新部署必须使用 `APPLE_BUNDLE_IDS` 避免漏配 macOS audience。 |

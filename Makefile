@@ -9,6 +9,12 @@ APP_GROUP_IDENTIFIER ?= group.local.todolist
 TODO_APP_BUNDLE_ID ?= local.todolist.ios
 TODO_WIDGET_BUNDLE_ID ?= local.todolist.ios.widget
 APPLE_DEVELOPMENT_TEAM ?=
+SERVER_ADDR ?= :8080
+SERVER_JWT_SECRET ?= local-dev-secret
+SERVER_APPLE_BUNDLE_IDS ?= local.todolist.ios,local.todolist.macos
+SERVER_DEEPSEEK_API_KEY ?= local-dev-key
+SERVER_DEEPSEEK_MODEL ?= deepseek-chat
+SQLITE_PATH ?= todolist.sqlite
 
 .PHONY: help check server-test server-vet swift-test macos-build ios-build apple-build clean
 
@@ -18,6 +24,7 @@ help:
 		'  make check        Run all local checks available on this machine' \
 		'  make server-test  Run Go backend tests' \
 		'  make server-vet   Run Go vet' \
+		'  make server-run   Run the Go backend with local SQLite' \
 		'  make swift-test   Run shared Swift tests' \
 		'  make macos-build  Build the macOS menu bar app' \
 		'  make ios-build    Build the iOS app for simulator' \
@@ -31,6 +38,17 @@ server-test:
 
 server-vet:
 	cd server && go vet ./...
+
+server-run:
+	cd server && \
+		ADDR="$(SERVER_ADDR)" \
+		DATABASE_DRIVER=sqlite \
+		SQLITE_PATH="$(SQLITE_PATH)" \
+		JWT_SECRET="$(SERVER_JWT_SECRET)" \
+		APPLE_BUNDLE_IDS="$(SERVER_APPLE_BUNDLE_IDS)" \
+		DEEPSEEK_API_KEY="$(SERVER_DEEPSEEK_API_KEY)" \
+		DEEPSEEK_MODEL="$(SERVER_DEEPSEEK_MODEL)" \
+		go run ./cmd/server
 
 swift-test:
 	cd shared/swift && swift test

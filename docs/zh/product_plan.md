@@ -9,7 +9,7 @@
 - iPhone App：SwiftUI 原生界面，支持 Apple 登录、自然语言输入、AI 整理、任务确认、任务列表、完成和删除。
 - macOS App：菜单栏轻应用，支持 Apple 登录、查看任务、快速新增、完成任务和同步状态展示。
 - iPhone 小组件：使用 WidgetKit 展示最重要和最紧急的任务；第一版只读，点击进入 App。
-- 后端：自建 Go + Postgres REST JSON API，负责 Apple 登录校验、JWT、任务同步、DeepSeek 代理和用户数据隔离。
+- 后端：自建 Go REST JSON API，第一版默认用 SQLite 简化本地开发，保留 Postgres 切换路径，负责 Apple 登录校验、JWT、任务同步、DeepSeek 代理和用户数据隔离。
 - 同步：客户端支持离线编辑，恢复网络后同步；删除使用软删除；冲突采用最后写入优先。
 - 语音输入：第一版依赖系统键盘听写，不实现 App 内录音识别。
 

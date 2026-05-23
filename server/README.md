@@ -4,11 +4,10 @@ Go REST JSON backend for the AI todo MVP.
 
 ## Run
 
-Apply `migrations/001_init.sql` to Postgres, then start:
+SQLite is the default local database. Start the server with:
 
 ```sh
 cd server
-DATABASE_URL='postgres://user:pass@localhost:5432/todolist?sslmode=disable' \
 JWT_SECRET='change-me' \
 APPLE_BUNDLE_IDS='com.yourcompany.todolist.ios,com.yourcompany.todolist.macos' \
 DEEPSEEK_API_KEY='...' \
@@ -16,7 +15,9 @@ DEEPSEEK_MODEL='deepseek-chat' \
 go run ./cmd/server
 ```
 
-`ADDR` is optional and defaults to `:8080`. `DEEPSEEK_MODEL` is optional and defaults to `deepseek-chat`. `APPLE_BUNDLE_IDS` is a comma-separated list of Sign in with Apple audiences; `APPLE_BUNDLE_ID` is still accepted for a single client.
+This creates `server/todolist.sqlite` when run from the `server` directory. `ADDR` is optional and defaults to `:8080`. `SQLITE_PATH` is optional and defaults to `todolist.sqlite`. `DEEPSEEK_MODEL` is optional and defaults to `deepseek-chat`. `APPLE_BUNDLE_IDS` is a comma-separated list of Sign in with Apple audiences; `APPLE_BUNDLE_ID` is still accepted for a single client.
+
+To use Postgres later, set `DATABASE_DRIVER=postgres`, apply `migrations/001_init.sql`, and provide `DATABASE_URL`.
 
 ## systemd 部署示例
 
@@ -26,7 +27,8 @@ go run ./cmd/server
 
 ```env
 ADDR=:8080
-DATABASE_URL=postgres://user:pass@localhost:5432/todolist?sslmode=disable
+DATABASE_DRIVER=sqlite
+SQLITE_PATH=/var/lib/todolist/todolist.sqlite
 JWT_SECRET=change-me
 APPLE_BUNDLE_IDS=com.yourcompany.todolist.ios,com.yourcompany.todolist.macos
 DEEPSEEK_API_KEY=...
@@ -53,7 +55,7 @@ Restart=on-failure
 WantedBy=multi-user.target
 ```
 
-部署前先应用 `migrations/001_init.sql`，并确保 `APPLE_BUNDLE_IDS` 覆盖 iOS 与 macOS 客户端 Sign in with Apple 的 audience。
+SQLite 本地开发不需要手动迁移。Postgres 部署前先应用 `migrations/001_init.sql`，并确保 `APPLE_BUNDLE_IDS` 覆盖 iOS 与 macOS 客户端 Sign in with Apple 的 audience。
 
 ## API
 

@@ -37,6 +37,7 @@
 
 ## Tasks
 
+- [x] 设计 SQLite 本地任务表
 - [x] 设计并迁移 Postgres 任务表
 - [ ] 实现任务本地模型（已实现，待 `swift test` 验收）
 - [ ] 实现任务新增、编辑、完成和软删除（已实现，待 `swift test` 验收）
@@ -80,7 +81,8 @@
 ## Server
 
 - [x] 搭建 Go 服务结构
-- [x] 配置 Postgres 连接
+- [x] 配置 SQLite 本地连接
+- [x] 保留 Postgres 连接
 - [x] 编写数据库迁移
 - [x] 实现 REST JSON 错误格式
 - [x] 实现 JWT 中间件

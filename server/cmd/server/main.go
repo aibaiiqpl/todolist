@@ -12,6 +12,7 @@ import (
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+	_ "modernc.org/sqlite"
 
 	"todolist/server/internal/ai"
 	"todolist/server/internal/apple"
@@ -27,12 +28,7 @@ func main() {
 }
 
 func run() error {
-	databaseURL := os.Getenv("DATABASE_URL")
-	if databaseURL == "" {
-		return errors.New("DATABASE_URL is required")
-	}
-
-	db, err := sql.Open("pgx", databaseURL)
+	db, taskStore, err := openStore()
 	if err != nil {
 		return err
 	}
@@ -72,7 +68,7 @@ func run() error {
 		addr = ":8080"
 	}
 
-	api := httpapi.New(store.NewPostgresStore(db), jwtSigner, appleVerifier, organizer)
+	api := httpapi.New(taskStore, jwtSigner, appleVerifier, organizer)
 	server := &http.Server{
 		Addr:              addr,
 		Handler:           api.Handler(),
@@ -95,5 +91,45 @@ func run() error {
 			return nil
 		}
 		return err
+	}
+}
+
+func openStore() (*sql.DB, store.Store, error) {
+	driver := os.Getenv("DATABASE_DRIVER")
+	if driver == "" {
+		if os.Getenv("DATABASE_URL") != "" {
+			driver = "postgres"
+		} else {
+			driver = "sqlite"
+		}
+	}
+
+	switch driver {
+	case "postgres":
+		databaseURL := os.Getenv("DATABASE_URL")
+		if databaseURL == "" {
+			return nil, nil, errors.New("DATABASE_URL is required for postgres")
+		}
+		db, err := sql.Open("pgx", databaseURL)
+		if err != nil {
+			return nil, nil, err
+		}
+		return db, store.NewPostgresStore(db), nil
+	case "sqlite":
+		path := os.Getenv("SQLITE_PATH")
+		if path == "" {
+			path = "todolist.sqlite"
+		}
+		db, err := sql.Open("sqlite", path)
+		if err != nil {
+			return nil, nil, err
+		}
+		if err := store.InitializeSQLite(context.Background(), db); err != nil {
+			db.Close()
+			return nil, nil, err
+		}
+		return db, store.NewSQLiteStore(db), nil
+	default:
+		return nil, nil, errors.New("DATABASE_DRIVER must be sqlite or postgres")
 	}
 }
