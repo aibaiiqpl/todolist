@@ -12,7 +12,7 @@
 
 ## Auth
 
-- [x] 实现 Apple 登录客户端流程
+- [ ] 实现 Apple 登录客户端流程（已实现，待 Xcode 与真实 Apple 配置验收）
 - [x] 实现 `POST /auth/apple`
 - [x] 后端校验 Apple identity token
 - [x] 后端签发和校验应用 JWT
