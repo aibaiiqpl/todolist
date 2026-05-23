@@ -97,6 +97,16 @@ final class TodoSharedTests: XCTestCase {
         XCTAssertEqual(result.acknowledgedOperationIDs, ["op-1"])
         XCTAssertEqual(result.serverVersion, 43)
     }
+
+    func testAIDraftPriorityContractAcceptsOneToFive() throws {
+        let decoder = JSONDecoder.todoSharedDecoder()
+        let draft = try decoder.decode(AITaskDraft.self, from: Data("""
+        {"title":"Escalate issue","importance":5,"urgency":4,"due_at":null,"source_text":"Escalate issue"}
+        """.utf8))
+
+        XCTAssertEqual(draft.importance, .critical)
+        XCTAssertEqual(draft.urgency, .high)
+    }
 }
 
 private final class FakeTodoAPIClient: TodoAPIClient, @unchecked Sendable {
@@ -133,8 +143,8 @@ private enum TestError: Error {
 private func task(
     id: String,
     title: String,
-    importance: TaskPriority = .none,
-    urgency: TaskPriority = .none,
+    importance: TaskPriority = .medium,
+    urgency: TaskPriority = .medium,
     dueAt: Date? = nil,
     updatedAt: Date = date(0),
     version: Int = 1

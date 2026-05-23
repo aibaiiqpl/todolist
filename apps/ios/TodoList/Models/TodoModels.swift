@@ -37,10 +37,11 @@ struct TodoDraft: Identifiable, Equatable {
 extension TodoShared.TaskPriority {
     var title: String {
         switch self {
-        case .none: return "无"
         case .low: return "低"
+        case .mediumLow: return "中低"
         case .medium: return "中"
         case .high: return "高"
+        case .critical: return "最高"
         }
     }
 }

@@ -12,7 +12,7 @@
 
 ## Auth
 
-- [x] 实现 Apple 登录客户端流程
+- [ ] 实现 Apple 登录客户端流程
 - [x] 实现 `POST /auth/apple`
 - [x] 后端校验 Apple identity token
 - [x] 后端签发和校验应用 JWT
@@ -52,29 +52,29 @@
 ## iOS
 
 - [x] 搭建 SwiftUI iPhone App
-- [x] 接入共享 Swift Package
-- [x] 接入真实 Apple 登录流程
+- [ ] 接入共享 Swift Package
+- [ ] 接入真实 Apple 登录流程
 - [x] 实现自然语言输入框
 - [x] 支持系统键盘听写输入同一输入框
-- [x] 接入真实 AI 草稿预览和编辑确认
-- [x] 接入真实任务列表
-- [x] 接入真实任务完成和删除交互
-- [x] 接入真实同步状态展示
-- [x] 实现 iPhone 主屏 Widget
-- [x] Widget 展示真实最重要任务
-- [x] Widget 展示真实最紧急任务
-- [x] Widget 点击进入 App
+- [ ] 接入真实 AI 草稿预览和编辑确认
+- [ ] 接入真实任务列表
+- [ ] 接入真实任务完成和删除交互
+- [ ] 接入真实同步状态展示
+- [ ] 实现 iPhone 主屏 Widget
+- [ ] Widget 展示真实最重要任务
+- [ ] Widget 展示真实最紧急任务
+- [ ] Widget 点击进入 App
 - [ ] 添加 Widget 空状态验证
 
 ## macOS
 
 - [x] 搭建 macOS 菜单栏 App
-- [x] 接入共享 Swift Package
-- [x] 接入真实 Apple 登录流程
-- [x] 展示真实任务列表
-- [x] 接入真实快速新增任务
-- [x] 接入真实完成任务
-- [x] 展示真实同步状态
+- [ ] 接入共享 Swift Package
+- [ ] 接入真实 Apple 登录流程
+- [ ] 展示真实任务列表
+- [ ] 接入真实快速新增任务
+- [ ] 接入真实完成任务
+- [ ] 展示真实同步状态
 - [ ] 验证与 iPhone 端同账号同步
 
 ## Server

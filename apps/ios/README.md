@@ -3,10 +3,10 @@
 打开方式：
 
 1. 在 macOS 上打开 `apps/ios/TodoList.xcodeproj`。
-2. 将 App 与 Widget target 的 Bundle Identifier、App Group `group.com.example.todolist` 替换成团队真实值。
+2. 在 Xcode build settings 中配置 `TODO_API_BASE_URL`、`APP_GROUP_IDENTIFIER`、Bundle Identifier 和 Team。
 3. 选择 `TodoList` scheme，使用 iPhone 模拟器运行。
 
-当前界面骨架：
+当前实现：
 
 - SwiftUI iPhone App。
 - Apple 登录入口使用 `SignInWithAppleButton` 获取 identity token，并通过 shared Swift Package 调用真实 `POST /auth/apple`。
@@ -16,7 +16,7 @@
 - 同步状态展示，刷新时通过 shared sync engine 推送队列并拉取服务端变更；失败时队列保留在本地文件中。
 - WidgetKit 只读 Widget，通过 App Group 快照展示最重要和最紧急任务，点击 `todolist://tasks` 回到 App。
 
-真实后端地址通过 `TodoList/Info.plist` 的 `TodoAPIBaseURL` 配置。当前值是占位地址，接入环境时必须替换为真实服务器地址；不要在 iOS 工程中写入任何 AI provider key。
+真实后端地址通过 `TodoList/Info.plist` 的 `TodoAPIBaseURL` 读取 `TODO_API_BASE_URL` build setting。App Group 通过 `TodoAppGroupIdentifier` 读取 `APP_GROUP_IDENTIFIER` build setting。两者未配置时不会使用示例默认值；不要在 iOS 工程中写入任何 AI provider key。
 
 App target 已接入本地 Swift Package `../../shared/swift`，并链接 `TodoShared` product。当前协议由 shared `URLSessionTodoAPIClient` 承载：
 

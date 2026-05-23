@@ -90,8 +90,8 @@ final class SharedTodoService: TodoServicing {
         let repository = try await repository(for: session)
         let draft = AITaskDraft(
             title: trimmedTitle,
-            importance: .none,
-            urgency: .none,
+            importance: .medium,
+            urgency: .medium,
             sourceText: trimmedTitle
         )
         return try await repository.createTask(from: draft, userID: session.userID)

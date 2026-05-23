@@ -1,7 +1,6 @@
 import SwiftUI
 import WidgetKit
 
-private let appGroupIdentifier = "group.com.example.todolist"
 private let widgetSnapshotKey = "todo.widget.snapshot"
 
 struct WidgetTaskSnapshot: Codable, Identifiable, Equatable {
@@ -58,12 +57,26 @@ struct TodoTimelineProvider: TimelineProvider {
 
     private func loadSnapshot() -> TodoWidgetSnapshot {
         guard
+            let appGroupIdentifier = Bundle.main.todoAppGroupIdentifier,
             let data = UserDefaults(suiteName: appGroupIdentifier)?.data(forKey: widgetSnapshotKey),
             let snapshot = try? JSONDecoder().decode(TodoWidgetSnapshot.self, from: data)
         else {
             return TodoWidgetSnapshot(mostImportant: nil, mostUrgent: nil, updatedAt: Date())
         }
         return snapshot
+    }
+}
+
+extension Bundle {
+    var todoAppGroupIdentifier: String? {
+        guard
+            let value = object(forInfoDictionaryKey: "TodoAppGroupIdentifier") as? String,
+            !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+            !value.contains("$(")
+        else {
+            return nil
+        }
+        return value
     }
 }
 

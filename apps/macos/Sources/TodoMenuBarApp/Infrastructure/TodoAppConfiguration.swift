@@ -6,7 +6,7 @@ enum TodoAppConfiguration {
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard let value, !value.isEmpty else {
-            return URL(string: "https://todo-api.example.invalid")!
+            preconditionFailure("TODO_API_BASE_URL is required.")
         }
         guard let url = URL(string: value), let scheme = url.scheme, !scheme.isEmpty else {
             preconditionFailure("TODO_API_BASE_URL must be an absolute URL.")

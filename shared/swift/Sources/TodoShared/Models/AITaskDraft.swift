@@ -9,8 +9,8 @@ public struct AITaskDraft: Codable, Equatable, Sendable {
 
     public init(
         title: String,
-        importance: TaskPriority = .none,
-        urgency: TaskPriority = .none,
+        importance: TaskPriority = .medium,
+        urgency: TaskPriority = .medium,
         dueAt: Date? = nil,
         sourceText: String? = nil
     ) {

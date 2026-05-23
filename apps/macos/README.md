@@ -10,7 +10,7 @@ macOS 端是 SwiftUI `MenuBarExtra` 应用，默认接入 `../../shared/swift` �
 export TODO_API_BASE_URL="https://your-server.example.com"
 ```
 
-未配置时应用使用 `https://todo-api.example.invalid` 占位地址，登录或同步请求会失败。替换为真实服务器后，Apple 登录会把 `AuthenticationServices` 返回的 identity token 发送到 `/auth/apple`。
+未配置时应用启动即失败，避免把占位地址当成真实后端。配置真实服务器后，Apple 登录会把 `AuthenticationServices` 返回的 identity token 发送到 `/auth/apple`。
 
 ## 打开方式
 

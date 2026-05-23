@@ -4,14 +4,16 @@ import TodoShared
 extension TaskPriority {
     var displayName: String {
         switch self {
-        case .none:
-            "None"
         case .low:
             "Low"
+        case .mediumLow:
+            "Medium Low"
         case .medium:
             "Medium"
         case .high:
             "High"
+        case .critical:
+            "Critical"
         }
     }
 }

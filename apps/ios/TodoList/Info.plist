@@ -3,7 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>TodoAPIBaseURL</key>
-	<string>https://replace-with-real-server.example.com</string>
+	<string>$(TODO_API_BASE_URL)</string>
+	<key>TodoAppGroupIdentifier</key>
+	<string>$(APP_GROUP_IDENTIFIER)</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

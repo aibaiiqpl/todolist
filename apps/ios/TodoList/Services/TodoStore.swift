@@ -209,7 +209,11 @@ final class TodoStore: ObservableObject {
     }
 
     private static func apiBaseURL() throws -> URL {
-        guard let value = Bundle.main.object(forInfoDictionaryKey: "TodoAPIBaseURL") as? String else {
+        guard
+            let value = Bundle.main.object(forInfoDictionaryKey: "TodoAPIBaseURL") as? String,
+            !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+            !value.contains("$(")
+        else {
             throw TodoStoreError.missingAPIBaseURL
         }
         guard let url = URL(string: value), let scheme = url.scheme, let host = url.host, !scheme.isEmpty, !host.isEmpty else {

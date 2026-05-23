@@ -2,7 +2,6 @@ import Foundation
 import TodoShared
 import WidgetKit
 
-private let appGroupIdentifier = "group.com.example.todolist"
 private let widgetSnapshotKey = "todo.widget.snapshot"
 
 struct WidgetTaskSnapshot: Codable, Identifiable, Equatable {
@@ -33,8 +32,24 @@ enum WidgetDataStore {
             return
         }
 
+        guard let appGroupIdentifier = Bundle.main.todoAppGroupIdentifier else {
+            return
+        }
         UserDefaults(suiteName: appGroupIdentifier)?.set(data, forKey: widgetSnapshotKey)
         WidgetCenter.shared.reloadAllTimelines()
+    }
+}
+
+extension Bundle {
+    var todoAppGroupIdentifier: String? {
+        guard
+            let value = object(forInfoDictionaryKey: "TodoAppGroupIdentifier") as? String,
+            !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+            !value.contains("$(")
+        else {
+            return nil
+        }
+        return value
     }
 }
 
