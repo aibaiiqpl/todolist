@@ -59,6 +59,39 @@ final class TodoSharedTests: XCTestCase {
         }
     }
 
+    func testOfflineEditIsRetriedAndClearedAfterRecovery() async throws {
+        let repository = try await LocalTodoRepository(storage: InMemoryTodoLocalStorage())
+        let created = try await repository.createTask(
+            from: AITaskDraft(title: "Draft outline"),
+            userID: "user-1",
+            now: date(0),
+            id: "task-1"
+        )
+        try await repository.clearOperations(ids: (await repository.pendingOperations()).map(\.id))
+
+        _ = try await repository.updateTask(id: created.id, title: "Final outline", now: date(10))
+        let failingEngine = TodoSyncEngine(
+            repository: repository,
+            apiClient: FakeTodoAPIClient(syncError: TestError.expected)
+        )
+
+        do {
+            _ = try await failingEngine.pushPendingChanges(session: session())
+            XCTFail("Sync should fail while offline")
+        } catch TestError.expected {
+            let pending = await repository.pendingOperations()
+            XCTAssertEqual(pending.count, 1)
+            XCTAssertEqual(pending.first?.kind, .update)
+            XCTAssertEqual(pending.first?.task.title, "Final outline")
+        }
+
+        let recoveringEngine = TodoSyncEngine(repository: repository, apiClient: FakeTodoAPIClient())
+        _ = try await recoveringEngine.pushPendingChanges(session: session())
+
+        let remaining = await repository.pendingOperations()
+        XCTAssertTrue(remaining.isEmpty)
+    }
+
     func testLastWriteWinsUsesUpdatedAtThenVersion() {
         let older = task(id: "task-1", title: "Older", updatedAt: date(10), version: 10)
         let newer = task(id: "task-1", title: "Newer", updatedAt: date(20), version: 1)
@@ -82,6 +115,18 @@ final class TodoSharedTests: XCTestCase {
 
         XCTAssertEqual(selection.mostImportant?.id, "important")
         XCTAssertEqual(selection.mostUrgent?.id, "urgent")
+    }
+
+    func testWidgetSelectionReturnsEmptyStateWhenNoVisibleTasksExist() {
+        var completed = task(id: "completed", title: "Completed", importance: .critical, urgency: .critical)
+        completed.completed = true
+        var deleted = task(id: "deleted", title: "Deleted", importance: .critical, urgency: .critical)
+        deleted.deletedAt = date(10)
+
+        let selection = WidgetTaskSelector.select(from: [completed, deleted])
+
+        XCTAssertNil(selection.mostImportant)
+        XCTAssertNil(selection.mostUrgent)
     }
 
     func testSyncContractsUseServerVersionSnakeCase() throws {
