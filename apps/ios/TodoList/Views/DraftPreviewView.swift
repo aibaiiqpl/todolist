@@ -22,13 +22,13 @@ struct DraftPreviewView: View {
             TextField("任务标题", text: $draft.title, axis: .vertical)
 
             Picker("重要程度", selection: $draft.importance) {
-                ForEach(TaskImportance.allCases) { importance in
+                ForEach(TaskPriority.allCases, id: \.self) { importance in
                     Text(importance.title).tag(importance)
                 }
             }
 
             Picker("紧急程度", selection: $draft.urgency) {
-                ForEach(TaskUrgency.allCases) { urgency in
+                ForEach(TaskPriority.allCases, id: \.self) { urgency in
                     Text(urgency.title).tag(urgency)
                 }
             }

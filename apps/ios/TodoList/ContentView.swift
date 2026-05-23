@@ -36,9 +36,11 @@ private struct MainTodoView: View {
                 Section("AI 草稿") {
                     ForEach(store.drafts) { draft in
                         DraftPreviewView(draft: draft) { updatedDraft in
-                            store.confirmDraft(updatedDraft)
-                            if store.drafts.isEmpty {
-                                inputText = ""
+                            Task {
+                                await store.confirmDraft(updatedDraft)
+                                if store.drafts.isEmpty {
+                                    inputText = ""
+                                }
                             }
                         } onCancel: {
                             store.cancelDraft(draft)

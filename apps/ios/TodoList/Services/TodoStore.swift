@@ -1,5 +1,6 @@
 import AuthenticationServices
 import Foundation
+import TodoShared
 
 @MainActor
 final class TodoStore: ObservableObject {
@@ -9,27 +10,23 @@ final class TodoStore: ObservableObject {
     @Published private(set) var drafts: [TodoDraft] = []
     @Published var errorMessage: String?
 
-    private let backend: TodoBackendServicing
-    private var userID: String?
-    private var accessToken: String?
-    private var expiresAt: Date?
-    private var serverVersion = 0
-    private var pendingOperations: [TaskSyncOperation] = []
+    private var apiClient: URLSessionTodoAPIClient?
+    private var repository: LocalTodoRepository?
+    private var syncEngine: TodoSyncEngine?
+    private var session: AuthSession?
+    private var serverVersion: Int64 = 0
 
-    init(backend: TodoBackendServicing = PlaceholderTodoBackendService()) {
-        self.backend = backend
+    init() {
         WidgetDataStore.publish(tasks: tasks)
+        Task {
+            await configureSharedServices()
+        }
     }
 
     func handleAppleAuthorization(_ result: Result<ASAuthorization, Error>) async {
         do {
             let token = try identityToken(from: result)
-            let response = try await backend.authenticateWithApple(
-                AppleAuthRequest(identityToken: token)
-            )
-            userID = response.userID
-            accessToken = response.accessToken
-            expiresAt = response.expiresAt
+            session = try await requiredAPIClient().authenticateWithApple(identityToken: token)
             isAuthenticated = true
             errorMessage = nil
             await sync()
@@ -40,117 +37,161 @@ final class TodoStore: ObservableObject {
 
     func organize(sourceText: String) async {
         do {
-            let response = try await backend.organize(
-                OrganizeRequest(input: sourceText),
-                accessToken: requiredAccessToken()
+            let trimmedText = sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedText.isEmpty else {
+                throw TodoStoreError.emptyInput
+            }
+            let taskDrafts = try await requiredAPIClient().organizeTasks(
+                input: trimmedText,
+                session: requiredSession()
             )
-            drafts = response.drafts
+            drafts = taskDrafts.map { taskDraft in
+                var normalizedDraft = taskDraft
+                if normalizedDraft.sourceText == nil {
+                    normalizedDraft.sourceText = trimmedText
+                }
+                return TodoDraft(taskDraft: normalizedDraft)
+            }
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
         }
     }
 
-    func confirmDraft(_ draft: TodoDraft) {
-        let now = Date()
-        let task = TodoTask(
-            id: UUID(),
-            title: draft.title.trimmingCharacters(in: .whitespacesAndNewlines),
-            completed: false,
-            importance: draft.importance,
-            urgency: draft.urgency,
-            dueAt: draft.dueAt,
-            sourceText: draft.sourceText,
-            createdAt: now,
-            updatedAt: now,
-            deletedAt: nil,
-            version: 0
-        )
-        tasks.insert(task, at: 0)
-        drafts.removeAll { $0.id == draft.id }
-        enqueue(kind: .create, task: task)
-        WidgetDataStore.publish(tasks: tasks)
+    func confirmDraft(_ draft: TodoDraft) async {
+        do {
+            var taskDraft = draft.taskDraft
+            taskDraft.title = taskDraft.title.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !taskDraft.title.isEmpty else {
+                throw TodoStoreError.emptyInput
+            }
+            _ = try await requiredRepository().createTask(
+                from: taskDraft,
+                userID: requiredSession().userID
+            )
+            drafts.removeAll { $0.id == draft.id }
+            await reloadLocalTasks()
+            await sync()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     func cancelDraft(_ draft: TodoDraft) {
         drafts.removeAll { $0.id == draft.id }
     }
 
-    func toggleCompletion(for task: TodoTask) {
-        update(task) { item in
-            item.completed.toggle()
-            item.updatedAt = Date()
+    func toggleCompletion(for task: TodoTask) async {
+        guard !task.completed else {
+            return
+        }
+        do {
+            _ = try await requiredRepository().completeTask(id: task.id)
+            await reloadLocalTasks()
+            await refreshPendingSyncState()
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 
-    func delete(_ task: TodoTask) {
-        update(task) { item in
-            item.deletedAt = Date()
-            item.updatedAt = Date()
+    func delete(_ task: TodoTask) async {
+        do {
+            _ = try await requiredRepository().softDeleteTask(id: task.id)
+            await reloadLocalTasks()
+            await refreshPendingSyncState()
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 
     func sync() async {
-        guard isAuthenticated else {
+        guard isAuthenticated, session != nil else {
             return
         }
 
         syncState = .syncing
         do {
-            if pendingOperations.isEmpty {
-                let response = try await backend.changes(
-                    sinceVersion: serverVersion,
-                    accessToken: requiredAccessToken()
-                )
-                merge(response.tasks)
-                serverVersion = response.serverVersion
-            } else {
-                let response = try await backend.sync(
-                    TaskSyncRequest(operations: pendingOperations),
-                    accessToken: requiredAccessToken()
-                )
-                let acknowledgedIDs = Set(response.acknowledgedOperationIDs)
-                pendingOperations.removeAll { acknowledgedIDs.contains($0.id) }
-                merge(response.tasks)
-                serverVersion = response.serverVersion
+            let repository = try requiredRepository()
+            let session = try requiredSession()
+            let pendingOperations = await repository.pendingOperations()
+            if !pendingOperations.isEmpty {
+                _ = try await requiredSyncEngine().pushPendingChanges(session: session)
             }
-
-            syncState = pendingOperations.isEmpty ? .idle : .offlinePending(pendingOperations.count)
+            let changes = try await requiredSyncEngine().pullChanges(
+                sinceVersion: serverVersion,
+                session: session
+            )
+            serverVersion = changes.serverVersion
+            await reloadLocalTasks()
+            await refreshPendingSyncState()
             errorMessage = nil
-            WidgetDataStore.publish(tasks: tasks)
         } catch {
             syncState = .failed(error.localizedDescription)
             errorMessage = error.localizedDescription
         }
     }
 
-    private func update(_ task: TodoTask, mutate: (inout TodoTask) -> Void) {
-        guard let index = tasks.firstIndex(where: { $0.id == task.id }) else {
+    private func configureSharedServices() async {
+        do {
+            let baseURL = try Self.apiBaseURL()
+            let repository = try await LocalTodoRepository(
+                storage: FileTodoLocalStorage(fileURL: Self.localStoreURL())
+            )
+            let apiClient = URLSessionTodoAPIClient(baseURL: baseURL)
+            self.repository = repository
+            self.apiClient = apiClient
+            self.syncEngine = TodoSyncEngine(repository: repository, apiClient: apiClient)
+            await reloadLocalTasks()
+            await refreshPendingSyncState()
+            errorMessage = nil
+        } catch {
+            syncState = .failed(error.localizedDescription)
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func reloadLocalTasks() async {
+        guard let repository else {
             return
         }
-        mutate(&tasks[index])
-        tasks.sort(by: sortTasks)
-        enqueue(kind: tasks[index].isDeleted ? .delete : .update, task: tasks[index])
+        tasks = await repository.allTasks().sorted(by: sortTasks)
         WidgetDataStore.publish(tasks: tasks)
     }
 
-    private func enqueue(kind: TaskSyncOperationKind, task: TodoTask) {
-        pendingOperations.append(
-            TaskSyncOperation(
-                id: UUID(),
-                kind: kind,
-                task: task,
-                createdAt: Date()
-            )
-        )
-        syncState = .offlinePending(pendingOperations.count)
+    private func refreshPendingSyncState() async {
+        guard let repository else {
+            return
+        }
+        let pendingCount = await repository.pendingOperations().count
+        syncState = pendingCount == 0 ? .idle : .offlinePending(pendingCount)
     }
 
-    private func requiredAccessToken() throws -> String {
-        if let accessToken {
-            return accessToken
+    private func requiredAPIClient() throws -> URLSessionTodoAPIClient {
+        if let apiClient {
+            return apiClient
         }
-        throw TodoBackendError.missingAccessToken
+        throw TodoStoreError.notConfigured
+    }
+
+    private func requiredRepository() throws -> LocalTodoRepository {
+        if let repository {
+            return repository
+        }
+        throw TodoStoreError.notConfigured
+    }
+
+    private func requiredSyncEngine() throws -> TodoSyncEngine {
+        if let syncEngine {
+            return syncEngine
+        }
+        throw TodoStoreError.notConfigured
+    }
+
+    private func requiredSession() throws -> AuthSession {
+        if let session {
+            return session
+        }
+        throw TodoStoreError.missingAccessToken
     }
 
     private func identityToken(from result: Result<ASAuthorization, Error>) throws -> String {
@@ -159,23 +200,28 @@ final class TodoStore: ObservableObject {
             let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
             let token = credential.identityToken
         else {
-            throw TodoBackendError.missingIdentityToken
+            throw TodoStoreError.missingIdentityToken
         }
         guard let tokenString = String(data: token, encoding: .utf8) else {
-            throw TodoBackendError.invalidIdentityToken
+            throw TodoStoreError.invalidIdentityToken
         }
         return tokenString
     }
 
-    private func merge(_ changedTasks: [TodoTask]) {
-        for changedTask in changedTasks {
-            if let index = tasks.firstIndex(where: { $0.id == changedTask.id }) {
-                tasks[index] = changedTask
-            } else {
-                tasks.append(changedTask)
-            }
+    private static func apiBaseURL() throws -> URL {
+        guard let value = Bundle.main.object(forInfoDictionaryKey: "TodoAPIBaseURL") as? String else {
+            throw TodoStoreError.missingAPIBaseURL
         }
-        tasks.sort(by: sortTasks)
+        guard let url = URL(string: value), let scheme = url.scheme, let host = url.host, !scheme.isEmpty, !host.isEmpty else {
+            throw TodoStoreError.invalidAPIBaseURL(value)
+        }
+        return url
+    }
+
+    private static func localStoreURL() -> URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("TodoList", isDirectory: true)
+            .appendingPathComponent("local-store.json")
     }
 
     private func sortTasks(_ lhs: TodoTask, _ rhs: TodoTask) -> Bool {
@@ -189,5 +235,34 @@ final class TodoStore: ObservableObject {
             return lhs.urgency.rawValue > rhs.urgency.rawValue
         }
         return lhs.updatedAt > rhs.updatedAt
+    }
+}
+
+enum TodoStoreError: LocalizedError {
+    case emptyInput
+    case missingIdentityToken
+    case invalidIdentityToken
+    case missingAccessToken
+    case missingAPIBaseURL
+    case invalidAPIBaseURL(String)
+    case notConfigured
+
+    var errorDescription: String? {
+        switch self {
+        case .emptyInput:
+            return "请输入待整理内容"
+        case .missingIdentityToken:
+            return "Apple 登录未返回身份令牌"
+        case .invalidIdentityToken:
+            return "Apple 身份令牌格式无效"
+        case .missingAccessToken:
+            return "请先登录"
+        case .missingAPIBaseURL:
+            return "缺少 TodoAPIBaseURL 配置"
+        case .invalidAPIBaseURL(let value):
+            return "TodoAPIBaseURL 无效：\(value)"
+        case .notConfigured:
+            return "iOS shared 服务尚未完成初始化"
+        }
     }
 }

@@ -1,11 +1,12 @@
 import Foundation
+import TodoShared
 import WidgetKit
 
 private let appGroupIdentifier = "group.com.example.todolist"
 private let widgetSnapshotKey = "todo.widget.snapshot"
 
 struct WidgetTaskSnapshot: Codable, Identifiable, Equatable {
-    let id: UUID
+    let id: String
     let title: String
     let importance: Int
     let urgency: Int
@@ -20,30 +21,11 @@ struct TodoWidgetSnapshot: Codable, Equatable {
 
 enum WidgetDataStore {
     static func publish(tasks: [TodoTask]) {
-        let visibleTasks = tasks.filter { !$0.completed && !$0.isDeleted }
-        let mostImportant = visibleTasks
-            .sorted { lhs, rhs in
-                if lhs.importance.rawValue == rhs.importance.rawValue {
-                    return lhs.updatedAt > rhs.updatedAt
-                }
-                return lhs.importance.rawValue > rhs.importance.rawValue
-            }
-            .first
-            .map(WidgetTaskSnapshot.init(task:))
-
-        let mostUrgent = visibleTasks
-            .sorted { lhs, rhs in
-                if lhs.urgency.rawValue == rhs.urgency.rawValue {
-                    return lhs.updatedAt > rhs.updatedAt
-                }
-                return lhs.urgency.rawValue > rhs.urgency.rawValue
-            }
-            .first
-            .map(WidgetTaskSnapshot.init(task:))
+        let selection = WidgetTaskSelector.select(from: tasks)
 
         let snapshot = TodoWidgetSnapshot(
-            mostImportant: mostImportant,
-            mostUrgent: mostUrgent,
+            mostImportant: selection.mostImportant.map(WidgetTaskSnapshot.init(task:)),
+            mostUrgent: selection.mostUrgent.map(WidgetTaskSnapshot.init(task:)),
             updatedAt: Date()
         )
 

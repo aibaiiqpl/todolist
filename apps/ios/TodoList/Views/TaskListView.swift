@@ -13,11 +13,15 @@ struct TaskListView: View {
         } else {
             ForEach(visibleTasks) { task in
                 TaskRow(task: task) {
-                    store.toggleCompletion(for: task)
+                    Task {
+                        await store.toggleCompletion(for: task)
+                    }
                 }
                 .swipeActions(edge: .trailing) {
                     Button(role: .destructive) {
-                        store.delete(task)
+                        Task {
+                            await store.delete(task)
+                        }
                     } label: {
                         Label("删除", systemImage: "trash")
                     }

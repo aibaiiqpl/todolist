@@ -5,7 +5,7 @@ private let appGroupIdentifier = "group.com.example.todolist"
 private let widgetSnapshotKey = "todo.widget.snapshot"
 
 struct WidgetTaskSnapshot: Codable, Identifiable, Equatable {
-    let id: UUID
+    let id: String
     let title: String
     let importance: Int
     let urgency: Int
@@ -29,14 +29,14 @@ struct TodoTimelineProvider: TimelineProvider {
             date: Date(),
             snapshot: TodoWidgetSnapshot(
                 mostImportant: WidgetTaskSnapshot(
-                    id: UUID(),
+                    id: UUID().uuidString,
                     title: "确认产品计划",
                     importance: 3,
                     urgency: 2,
                     dueAt: nil
                 ),
                 mostUrgent: WidgetTaskSnapshot(
-                    id: UUID(),
+                    id: UUID().uuidString,
                     title: "今天同步待办",
                     importance: 2,
                     urgency: 3,

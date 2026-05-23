@@ -10,7 +10,6 @@
 		001000000000000000000001 /* TodoListApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002000000000000000000001 /* TodoListApp.swift */; };
 		001000000000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002000000000000000000002 /* ContentView.swift */; };
 		001000000000000000000003 /* TodoModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002000000000000000000003 /* TodoModels.swift */; };
-		001000000000000000000004 /* TodoBackendService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002000000000000000000004 /* TodoBackendService.swift */; };
 		001000000000000000000005 /* WidgetDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002000000000000000000005 /* WidgetDataStore.swift */; };
 		001000000000000000000006 /* TodoStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002000000000000000000006 /* TodoStore.swift */; };
 		001000000000000000000007 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002000000000000000000007 /* LoginView.swift */; };
@@ -20,6 +19,7 @@
 		00100000000000000000000B /* SyncStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00200000000000000000000B /* SyncStatusView.swift */; };
 		00100000000000000000000C /* TodoWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00200000000000000000000C /* TodoWidget.swift */; };
 		00100000000000000000000D /* TodoWidgetExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 003000000000000000000002 /* TodoWidgetExtension.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		00100000000000000000000E /* TodoShared in Frameworks */ = {isa = PBXBuildFile; productRef = 00E000000000000000000001 /* TodoShared */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -50,7 +50,6 @@
 		002000000000000000000001 /* TodoListApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodoListApp.swift; sourceTree = "<group>"; };
 		002000000000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		002000000000000000000003 /* TodoModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodoModels.swift; sourceTree = "<group>"; };
-		002000000000000000000004 /* TodoBackendService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodoBackendService.swift; sourceTree = "<group>"; };
 		002000000000000000000005 /* WidgetDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDataStore.swift; sourceTree = "<group>"; };
 		002000000000000000000006 /* TodoStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodoStore.swift; sourceTree = "<group>"; };
 		002000000000000000000007 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
@@ -72,6 +71,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				00100000000000000000000E /* TodoShared in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -119,7 +119,6 @@
 		009000000000000000000004 /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				002000000000000000000004 /* TodoBackendService.swift */,
 				002000000000000000000005 /* WidgetDataStore.swift */,
 				002000000000000000000006 /* TodoStore.swift */,
 			);
@@ -174,6 +173,9 @@
 				00C000000000000000000001 /* PBXTargetDependency */,
 			);
 			name = TodoList;
+			packageProductDependencies = (
+				00E000000000000000000001 /* TodoShared */,
+			);
 			productName = TodoList;
 			productReference = 003000000000000000000001 /* TodoList.app */;
 			productType = "com.apple.product-type.application";
@@ -223,6 +225,9 @@
 				Base,
 			);
 			mainGroup = 009000000000000000000001;
+			packageReferences = (
+				00F000000000000000000001 /* XCLocalSwiftPackageReference "../../shared/swift" */,
+			);
 			productRefGroup = 009000000000000000000007 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -241,7 +246,6 @@
 				001000000000000000000001 /* TodoListApp.swift in Sources */,
 				001000000000000000000002 /* ContentView.swift in Sources */,
 				001000000000000000000003 /* TodoModels.swift in Sources */,
-				001000000000000000000004 /* TodoBackendService.swift in Sources */,
 				001000000000000000000005 /* WidgetDataStore.swift in Sources */,
 				001000000000000000000006 /* TodoStore.swift in Sources */,
 				001000000000000000000007 /* LoginView.swift in Sources */,
@@ -517,6 +521,21 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		00F000000000000000000001 /* XCLocalSwiftPackageReference "../../shared/swift" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../../shared/swift";
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		00E000000000000000000001 /* TodoShared */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 00F000000000000000000001 /* XCLocalSwiftPackageReference "../../shared/swift" */;
+			productName = TodoShared;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 005000000000000000000001 /* Project object */;
 }
