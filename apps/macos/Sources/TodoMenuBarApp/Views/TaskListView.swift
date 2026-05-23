@@ -1,4 +1,5 @@
 import SwiftUI
+import TodoShared
 
 struct TaskListView: View {
     @ObservedObject var viewModel: MenuBarViewModel
@@ -38,8 +39,9 @@ struct TaskListView: View {
                 Image(systemName: task.completed ? "checkmark.circle.fill" : "circle")
                     .foregroundStyle(task.completed ? .green : .secondary)
             }
+            .disabled(task.completed)
             .buttonStyle(.plain)
-            .help(task.completed ? "Mark incomplete" : "Complete task")
+            .help(task.completed ? "Completed" : "Complete task")
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(task.title)
@@ -56,7 +58,7 @@ struct TaskListView: View {
         }
     }
 
-    private func priorityBadge(_ label: String, _ level: TodoPriorityLevel) -> some View {
+    private func priorityBadge(_ label: String, _ level: TaskPriority) -> some View {
         Text("\(label): \(level.displayName)")
             .font(.caption2)
             .foregroundStyle(.secondary)

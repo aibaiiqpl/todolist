@@ -31,7 +31,7 @@ open Package.swift
 - 完成任务：通过 shared 本地仓库更新任务并入队。
 - 同步状态：调用 shared sync engine，失败时保留本地队列等待重试。
 
-第一版不包含 macOS 桌面 Widget。
+第一版只包含菜单栏应用。
 
 ## Linux 静态验证
 
@@ -39,8 +39,8 @@ Linux 环境无法编译 AppKit/SwiftUI。可执行的静态验证：
 
 ```bash
 cd /home/agbox/workspace/todolist
-rg -n "import TodoShared" apps/macos
-rg -n "PlaceholderTodoService|authenticateWithApplePlaceholder" apps/macos || true
+rg -n "import TodoShared" apps/macos/Sources apps/macos/Package.swift
+rg -n "PlaceholderTodoService|authenticateWithApplePlaceholder" apps/macos/Sources apps/macos/Package.swift || true
 rg -n "TodoShared|../../shared/swift" apps/macos/Package.swift
-rg -n "Widget|widget" apps/macos || true
+rg -n "Widget|widget" apps/macos/Sources apps/macos/Package.swift || true
 ```

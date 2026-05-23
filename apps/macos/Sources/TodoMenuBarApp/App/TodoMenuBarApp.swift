@@ -2,7 +2,7 @@ import SwiftUI
 
 @main
 struct TodoMenuBarApp: App {
-    @StateObject private var viewModel = MenuBarViewModel(service: PlaceholderTodoService())
+    @StateObject private var viewModel = MenuBarViewModel(service: SharedTodoService())
 
     var body: some Scene {
         MenuBarExtra {

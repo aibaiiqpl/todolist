@@ -1,10 +1,11 @@
 import AuthenticationServices
 import Combine
 import Foundation
+import TodoShared
 
 @MainActor
 final class MenuBarViewModel: ObservableObject {
-    @Published private(set) var authSession: AuthSession = .signedOut
+    @Published private(set) var authSession: AuthSession?
     @Published private(set) var tasks: [TodoTask] = []
     @Published private(set) var syncSnapshot: SyncSnapshot = .initial
     @Published var draftTitle = ""
@@ -24,19 +25,24 @@ final class MenuBarViewModel: ObservableObject {
             return
         }
         didRestore = true
-        authSession = await service.restoreSession()
-        guard authSession.isAuthenticated else {
-            return
+        do {
+            authSession = try await service.restoreSession()
+            guard authSession?.isAuthenticated == true else {
+                return
+            }
+            await reloadTasks()
+            await syncNow()
+        } catch {
+            errorMessage = error.localizedDescription
         }
-        await reloadTasks()
-        await syncNow()
     }
 
     func handleAppleSignIn(result: Result<ASAuthorization, Error>) async {
         switch result {
-        case .success:
+        case .success(let authorization):
             do {
-                authSession = try await service.authenticateWithApplePlaceholder()
+                let identityToken = try identityToken(from: authorization)
+                authSession = try await service.authenticateWithApple(identityToken: identityToken)
                 errorMessage = nil
                 await reloadTasks()
                 await syncNow()
@@ -50,7 +56,7 @@ final class MenuBarViewModel: ObservableObject {
 
     func signOut() async {
         await service.signOut()
-        authSession = .signedOut
+        authSession = nil
         tasks = []
         syncSnapshot = .initial
         draftTitle = ""
@@ -90,7 +96,7 @@ final class MenuBarViewModel: ObservableObject {
     }
 
     func syncNow() async {
-        guard authSession.isAuthenticated else {
+        guard authSession?.isAuthenticated == true else {
             syncSnapshot = .initial
             return
         }
@@ -102,6 +108,7 @@ final class MenuBarViewModel: ObservableObject {
         do {
             syncSnapshot = try await service.sync()
             errorMessage = nil
+            await reloadTasks()
         } catch {
             syncSnapshot.state = .failed(error.localizedDescription)
             errorMessage = error.localizedDescription
@@ -115,5 +122,18 @@ final class MenuBarViewModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func identityToken(from authorization: ASAuthorization) throws -> String {
+        guard
+            let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+            let tokenData = credential.identityToken,
+            let token = String(data: tokenData, encoding: .utf8),
+            !token.isEmpty
+        else {
+            throw TodoServiceError.invalidAppleIdentityToken
+        }
+
+        return token
     }
 }

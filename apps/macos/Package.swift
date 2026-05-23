@@ -10,9 +10,15 @@ let package = Package(
     products: [
         .executable(name: "TodoMenuBarApp", targets: ["TodoMenuBarApp"])
     ],
+    dependencies: [
+        .package(path: "../../shared/swift")
+    ],
     targets: [
         .executableTarget(
-            name: "TodoMenuBarApp"
+            name: "TodoMenuBarApp",
+            dependencies: [
+                "TodoShared"
+            ]
         )
     ]
 )

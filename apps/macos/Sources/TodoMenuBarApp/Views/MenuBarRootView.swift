@@ -5,7 +5,7 @@ struct MenuBarRootView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            if viewModel.authSession.isAuthenticated {
+            if viewModel.authSession?.isAuthenticated == true {
                 signedInContent
             } else {
                 SignInPanel(viewModel: viewModel)
@@ -43,7 +43,7 @@ struct MenuBarRootView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("AI Todos")
                     .font(.headline)
-                Text(viewModel.authSession.displayName ?? "Signed in")
+                Text(viewModel.authSession?.displayName ?? "Signed in")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

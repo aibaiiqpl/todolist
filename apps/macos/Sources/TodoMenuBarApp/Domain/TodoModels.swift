@@ -1,52 +1,35 @@
 import Foundation
+import TodoShared
 
-enum TodoPriorityLevel: String, CaseIterable, Identifiable {
-    case low
-    case normal
-    case high
-
-    var id: String { rawValue }
-
+extension TaskPriority {
     var displayName: String {
         switch self {
+        case .none:
+            "None"
         case .low:
             "Low"
-        case .normal:
-            "Normal"
+        case .medium:
+            "Medium"
         case .high:
             "High"
         }
     }
 }
 
-struct TodoTask: Identifiable, Equatable {
-    let id: UUID
-    var title: String
-    var completed: Bool
-    var importance: TodoPriorityLevel
-    var urgency: TodoPriorityLevel
-    var dueAt: Date?
-    var sourceText: String?
-    var createdAt: Date
-    var updatedAt: Date
-    var deletedAt: Date?
-    var version: Int
-
+extension TodoTask {
     var isDeleted: Bool {
         deletedAt != nil
     }
 }
 
-struct AuthSession: Equatable {
-    var isAuthenticated: Bool
-    var displayName: String?
-    var userID: String?
+extension AuthSession {
+    var isAuthenticated: Bool {
+        expiresAt > Date()
+    }
 
-    static let signedOut = AuthSession(
-        isAuthenticated: false,
-        displayName: nil,
-        userID: nil
-    )
+    var displayName: String {
+        userID
+    }
 }
 
 enum SyncConnectionState: Equatable {
