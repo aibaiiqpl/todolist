@@ -10,13 +10,13 @@ Apply `migrations/001_init.sql` to Postgres, then start:
 cd server
 DATABASE_URL='postgres://user:pass@localhost:5432/todolist?sslmode=disable' \
 JWT_SECRET='change-me' \
-APPLE_BUNDLE_ID='com.example.todolist' \
+APPLE_BUNDLE_IDS='com.yourcompany.todolist.ios,com.yourcompany.todolist.macos' \
 DEEPSEEK_API_KEY='...' \
 DEEPSEEK_MODEL='deepseek-chat' \
 go run ./cmd/server
 ```
 
-`ADDR` is optional and defaults to `:8080`. `DEEPSEEK_MODEL` is optional and defaults to `deepseek-chat`.
+`ADDR` is optional and defaults to `:8080`. `DEEPSEEK_MODEL` is optional and defaults to `deepseek-chat`. `APPLE_BUNDLE_IDS` is a comma-separated list of Sign in with Apple audiences; `APPLE_BUNDLE_ID` is still accepted for a single client.
 
 ## systemd 部署示例
 
@@ -28,7 +28,7 @@ go run ./cmd/server
 ADDR=:8080
 DATABASE_URL=postgres://user:pass@localhost:5432/todolist?sslmode=disable
 JWT_SECRET=change-me
-APPLE_BUNDLE_ID=com.example.todolist
+APPLE_BUNDLE_IDS=com.yourcompany.todolist.ios,com.yourcompany.todolist.macos
 DEEPSEEK_API_KEY=...
 DEEPSEEK_MODEL=deepseek-chat
 ```
@@ -53,7 +53,7 @@ Restart=on-failure
 WantedBy=multi-user.target
 ```
 
-部署前先应用 `migrations/001_init.sql`，并确保 `APPLE_BUNDLE_ID` 与客户端 Sign in with Apple 的 audience 一致。
+部署前先应用 `migrations/001_init.sql`，并确保 `APPLE_BUNDLE_IDS` 覆盖 iOS 与 macOS 客户端 Sign in with Apple 的 audience。
 
 ## API
 
@@ -69,4 +69,4 @@ Protocol shape:
 - `POST /tasks/sync`: `{"operations":[{"id":"operation-id","kind":"create|update|delete","task":{...},"created_at":"RFC3339"}]}` -> `{"acknowledged_operation_ids":[...],"tasks":[...],"server_version":1}`
 - `GET /tasks/changes?since_version=0` -> `{"tasks":[...],"server_version":1}`
 
-Apple token verification is isolated behind `apple.Verifier`. The production binary uses Apple's JWKS endpoint and validates `iss`, `aud`, `exp`, `iat`, and the RS256 signature. `APPLE_BUNDLE_ID` must match the client bundle ID used as the identity token audience.
+Apple token verification is isolated behind `apple.Verifier`. The production binary uses Apple's JWKS endpoint and validates `iss`, `aud`, `exp`, `iat`, and the RS256 signature. `APPLE_BUNDLE_IDS` must include every client bundle ID used as an identity token audience.

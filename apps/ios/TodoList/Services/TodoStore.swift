@@ -1,5 +1,6 @@
 import AuthenticationServices
 import Foundation
+import Network
 import TodoShared
 
 @MainActor
@@ -15,9 +16,12 @@ final class TodoStore: ObservableObject {
     private var syncEngine: TodoSyncEngine?
     private var session: AuthSession?
     private var serverVersion: Int64 = 0
+    private let pathMonitor = NWPathMonitor()
+    private let pathMonitorQueue = DispatchQueue(label: "TodoStore.NetworkPath")
 
     init() {
         WidgetDataStore.publish(tasks: tasks)
+        startNetworkRecoverySync()
         Task {
             await configureSharedServices()
         }
@@ -94,6 +98,21 @@ final class TodoStore: ObservableObject {
         }
     }
 
+    func updateTitle(for task: TodoTask, title: String) async {
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTitle.isEmpty else {
+            errorMessage = TodoStoreError.emptyInput.localizedDescription
+            return
+        }
+        do {
+            _ = try await requiredRepository().updateTask(id: task.id, title: trimmedTitle)
+            await reloadLocalTasks()
+            await refreshPendingSyncState()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     func delete(_ task: TodoTask) async {
         do {
             _ = try await requiredRepository().softDeleteTask(id: task.id)
@@ -102,6 +121,18 @@ final class TodoStore: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func startNetworkRecoverySync() {
+        pathMonitor.pathUpdateHandler = { [weak self] path in
+            guard path.status == .satisfied else {
+                return
+            }
+            Task { @MainActor [weak self] in
+                await self?.sync()
+            }
+        }
+        pathMonitor.start(queue: pathMonitorQueue)
     }
 
     func sync() async {

@@ -2,32 +2,73 @@ import SwiftUI
 
 struct TaskListView: View {
     @EnvironmentObject private var store: TodoStore
+    @State private var editingTask: TodoTask?
+    @State private var editingTitle = ""
 
     private var visibleTasks: [TodoTask] {
         store.tasks.filter { !$0.isDeleted }
     }
 
     var body: some View {
-        if visibleTasks.isEmpty {
-            ContentUnavailableView("暂无任务", systemImage: "checklist")
-        } else {
-            ForEach(visibleTasks) { task in
-                TaskRow(task: task) {
-                    Task {
-                        await store.toggleCompletion(for: task)
-                    }
-                }
-                .swipeActions(edge: .trailing) {
-                    Button(role: .destructive) {
+        Group {
+            if visibleTasks.isEmpty {
+                ContentUnavailableView("暂无任务", systemImage: "checklist")
+            } else {
+                ForEach(visibleTasks) { task in
+                    TaskRow(task: task) {
                         Task {
-                            await store.delete(task)
+                            await store.toggleCompletion(for: task)
                         }
-                    } label: {
-                        Label("删除", systemImage: "trash")
+                    }
+                    .swipeActions(edge: .trailing) {
+                        Button {
+                            editingTask = task
+                            editingTitle = task.title
+                        } label: {
+                            Label("编辑", systemImage: "pencil")
+                        }
+                        .tint(.blue)
+
+                        Button(role: .destructive) {
+                            Task {
+                                await store.delete(task)
+                            }
+                        } label: {
+                            Label("删除", systemImage: "trash")
+                        }
                     }
                 }
             }
         }
+        .alert("编辑任务", isPresented: editBinding) {
+            TextField("任务标题", text: $editingTitle)
+            Button("保存") {
+                guard let editingTask else {
+                    return
+                }
+                Task {
+                    await store.updateTitle(for: editingTask, title: editingTitle)
+                    self.editingTask = nil
+                    editingTitle = ""
+                }
+            }
+            Button("取消", role: .cancel) {
+                editingTask = nil
+                editingTitle = ""
+            }
+        }
+    }
+
+    private var editBinding: Binding<Bool> {
+        Binding(
+            get: { editingTask != nil },
+            set: { isPresented in
+                if !isPresented {
+                    editingTask = nil
+                    editingTitle = ""
+                }
+            }
+        )
     }
 }
 

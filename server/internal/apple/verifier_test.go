@@ -95,11 +95,48 @@ func TestJWKSVerifierRejectsInvalidSignature(t *testing.T) {
 
 func newTestVerifier(t *testing.T, jwksURL string) *JWKSVerifier {
 	t.Helper()
-	verifier, err := NewJWKSVerifierWithURL("com.example.todolist", jwksURL, nil)
+	verifier, err := NewJWKSVerifierWithURL([]string{"com.example.todolist"}, jwksURL, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	return verifier
+}
+
+func TestJWKSVerifierAcceptsAnyConfiguredAudience(t *testing.T) {
+	privateKey := generateKey(t)
+	jwksServer := serveJWKS(t, privateKey, "apple-key")
+	verifier, err := NewJWKSVerifierWithURL(
+		[]string{"com.example.todolist.ios", "com.example.todolist.macos"},
+		jwksServer.URL,
+		nil,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	token := signIdentityToken(t, privateKey, "apple-key", jwtClaims{
+		Issuer:    issuer,
+		Subject:   "apple-subject",
+		Audience:  audience{"com.example.todolist.macos"},
+		ExpiresAt: time.Now().Add(time.Hour).Unix(),
+		IssuedAt:  time.Now().Add(-time.Minute).Unix(),
+	})
+
+	if _, err := verifier.Verify(context.Background(), token); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestAudiencesFromEnvSplitsCommaSeparatedValues(t *testing.T) {
+	got := AudiencesFromEnv(" com.example.ios,com.example.macos,com.example.ios ")
+	want := []string{"com.example.ios", "com.example.macos"}
+	if len(got) != len(want) {
+		t.Fatalf("audiences = %+v, want %+v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("audiences = %+v, want %+v", got, want)
+		}
+	}
 }
 
 func generateKey(t *testing.T) *rsa.PrivateKey {

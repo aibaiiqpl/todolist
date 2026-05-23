@@ -8,6 +8,7 @@ protocol TodoServicing {
     func signOut() async
     func fetchTasks() async throws -> [TodoTask]
     func addTask(title: String) async throws -> TodoTask
+    func updateTaskTitle(id: TodoTask.ID, title: String) async throws -> TodoTask
     func setTaskCompleted(id: TodoTask.ID, completed: Bool) async throws -> TodoTask
     func sync() async throws -> SyncSnapshot
 }

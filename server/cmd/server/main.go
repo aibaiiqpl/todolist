@@ -50,11 +50,14 @@ func run() error {
 		return err
 	}
 
-	appleBundleID := os.Getenv("APPLE_BUNDLE_ID")
-	if appleBundleID == "" {
-		return errors.New("APPLE_BUNDLE_ID is required")
+	appleAudiences := apple.AudiencesFromEnv(os.Getenv("APPLE_BUNDLE_IDS"))
+	if len(appleAudiences) == 0 {
+		appleAudiences = apple.AudiencesFromEnv(os.Getenv("APPLE_BUNDLE_ID"))
 	}
-	appleVerifier, err := apple.NewJWKSVerifier(appleBundleID)
+	if len(appleAudiences) == 0 {
+		return errors.New("APPLE_BUNDLE_IDS is required")
+	}
+	appleVerifier, err := apple.NewJWKSVerifier(appleAudiences)
 	if err != nil {
 		return err
 	}

@@ -97,6 +97,23 @@ final class SharedTodoService: TodoServicing {
         return try await repository.createTask(from: draft, userID: session.userID)
     }
 
+    func updateTaskTitle(id: TodoTask.ID, title: String) async throws -> TodoTask {
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTitle.isEmpty else {
+            throw TodoServiceError.emptyTitle
+        }
+
+        let repository = try await requireRepository()
+        do {
+            return try await repository.updateTask(id: id, title: trimmedTitle)
+        } catch let error as LocalTodoRepositoryError {
+            switch error {
+            case .taskNotFound:
+                throw TodoServiceError.taskNotFound
+            }
+        }
+    }
+
     func setTaskCompleted(id: TodoTask.ID, completed: Bool) async throws -> TodoTask {
         guard completed else {
             throw TodoServiceError.unsupportedIncompleteToggle

@@ -1,6 +1,7 @@
 import AuthenticationServices
 import Combine
 import Foundation
+import Network
 import TodoShared
 
 @MainActor
@@ -15,9 +16,12 @@ final class MenuBarViewModel: ObservableObject {
 
     private let service: any TodoServicing
     private var didRestore = false
+    private let pathMonitor = NWPathMonitor()
+    private let pathMonitorQueue = DispatchQueue(label: "TodoMenuBar.NetworkPath")
 
     init(service: any TodoServicing) {
         self.service = service
+        startNetworkRecoverySync()
     }
 
     func restore() async {
@@ -95,6 +99,22 @@ final class MenuBarViewModel: ObservableObject {
         }
     }
 
+    func updateTitle(for task: TodoTask, title: String) async {
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTitle.isEmpty else {
+            errorMessage = TodoServiceError.emptyTitle.localizedDescription
+            return
+        }
+        do {
+            _ = try await service.updateTaskTitle(id: task.id, title: trimmedTitle)
+            errorMessage = nil
+            await reloadTasks()
+            syncSnapshot.pendingChanges += 1
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     func syncNow() async {
         guard authSession?.isAuthenticated == true else {
             syncSnapshot = .initial
@@ -122,6 +142,18 @@ final class MenuBarViewModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func startNetworkRecoverySync() {
+        pathMonitor.pathUpdateHandler = { [weak self] path in
+            guard path.status == .satisfied else {
+                return
+            }
+            Task { @MainActor [weak self] in
+                await self?.syncNow()
+            }
+        }
+        pathMonitor.start(queue: pathMonitorQueue)
     }
 
     private func identityToken(from authorization: ASAuthorization) throws -> String {

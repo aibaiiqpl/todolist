@@ -34,18 +34,19 @@ type Verifier interface {
 }
 
 type JWKSVerifier struct {
-	audience   string
+	audiences  []string
 	jwksURL    string
 	httpClient *http.Client
 	now        func() time.Time
 }
 
-func NewJWKSVerifier(audience string) (*JWKSVerifier, error) {
-	return NewJWKSVerifierWithURL(audience, DefaultJWKSURL, nil)
+func NewJWKSVerifier(audiences []string) (*JWKSVerifier, error) {
+	return NewJWKSVerifierWithURL(audiences, DefaultJWKSURL, nil)
 }
 
-func NewJWKSVerifierWithURL(audience string, jwksURL string, httpClient *http.Client) (*JWKSVerifier, error) {
-	if strings.TrimSpace(audience) == "" {
+func NewJWKSVerifierWithURL(audiences []string, jwksURL string, httpClient *http.Client) (*JWKSVerifier, error) {
+	audiences = normalizeAudiences(audiences)
+	if len(audiences) == 0 {
 		return nil, fmt.Errorf("apple audience is required")
 	}
 	if strings.TrimSpace(jwksURL) == "" {
@@ -55,11 +56,32 @@ func NewJWKSVerifierWithURL(audience string, jwksURL string, httpClient *http.Cl
 		httpClient = &http.Client{Timeout: 10 * time.Second}
 	}
 	return &JWKSVerifier{
-		audience:   audience,
+		audiences:  audiences,
 		jwksURL:    jwksURL,
 		httpClient: httpClient,
 		now:        func() time.Time { return time.Now().UTC() },
 	}, nil
+}
+
+func AudiencesFromEnv(value string) []string {
+	return normalizeAudiences(strings.Split(value, ","))
+}
+
+func normalizeAudiences(values []string) []string {
+	seen := map[string]struct{}{}
+	var audiences []string
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		audiences = append(audiences, value)
+	}
+	return audiences
 }
 
 func (v *JWKSVerifier) Verify(ctx context.Context, identityToken string) (Claims, error) {
@@ -126,7 +148,7 @@ func (v *JWKSVerifier) validateClaims(claims jwtClaims) error {
 	if claims.Subject == "" {
 		return ErrInvalidIdentityToken
 	}
-	if !claims.Audience.Contains(v.audience) {
+	if !claims.Audience.ContainsAny(v.audiences) {
 		return ErrInvalidIdentityToken
 	}
 	if claims.ExpiresAt == 0 || time.Unix(claims.ExpiresAt, 0).Before(now.Add(-clockSkew)) {
@@ -205,6 +227,15 @@ func (a *audience) UnmarshalJSON(data []byte) error {
 func (a audience) Contains(want string) bool {
 	for _, got := range a {
 		if got == want {
+			return true
+		}
+	}
+	return false
+}
+
+func (a audience) ContainsAny(wants []string) bool {
+	for _, want := range wants {
+		if a.Contains(want) {
 			return true
 		}
 	}
