@@ -50,6 +50,15 @@ func run() error {
 		return err
 	}
 
+	appleBundleID := os.Getenv("APPLE_BUNDLE_ID")
+	if appleBundleID == "" {
+		return errors.New("APPLE_BUNDLE_ID is required")
+	}
+	appleVerifier, err := apple.NewJWKSVerifier(appleBundleID)
+	if err != nil {
+		return err
+	}
+
 	organizer, err := ai.NewDeepSeekClientFromEnv()
 	if err != nil {
 		return err
@@ -60,7 +69,7 @@ func run() error {
 		addr = ":8080"
 	}
 
-	api := httpapi.New(store.NewPostgresStore(db), jwtSigner, apple.UnimplementedVerifier{}, organizer)
+	api := httpapi.New(store.NewPostgresStore(db), jwtSigner, appleVerifier, organizer)
 	server := &http.Server{
 		Addr:              addr,
 		Handler:           api.Handler(),

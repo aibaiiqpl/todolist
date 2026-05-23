@@ -10,6 +10,7 @@ Apply `migrations/001_init.sql` to Postgres, then start:
 cd server
 DATABASE_URL='postgres://user:pass@localhost:5432/todolist?sslmode=disable' \
 JWT_SECRET='change-me' \
+APPLE_BUNDLE_ID='com.example.todolist' \
 DEEPSEEK_API_KEY='...' \
 DEEPSEEK_MODEL='deepseek-chat' \
 go run ./cmd/server
@@ -31,4 +32,4 @@ Protocol shape:
 - `POST /tasks/sync`: `{"operations":[{"id":"operation-id","kind":"create|update|delete","task":{...},"created_at":"RFC3339"}]}` -> `{"acknowledged_operation_ids":[...],"tasks":[...],"server_version":1}`
 - `GET /tasks/changes?since_version=0` -> `{"tasks":[...],"server_version":1}`
 
-Apple token verification is isolated behind `apple.Verifier`. The current binary wires an explicit unimplemented verifier boundary; production should replace it with an Apple JWKS verifier without changing handlers or tests.
+Apple token verification is isolated behind `apple.Verifier`. The production binary uses Apple's JWKS endpoint and validates `iss`, `aud`, `exp`, `iat`, and the RS256 signature. `APPLE_BUNDLE_ID` must match the client bundle ID used as the identity token audience.
