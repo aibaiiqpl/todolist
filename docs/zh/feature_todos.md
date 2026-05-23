@@ -7,7 +7,8 @@
 - [x] 固化产品计划到 `docs/zh/product_plan.md`
 - [x] 固化功能代办到 `docs/zh/feature_todos.md`
 - [x] 固化并行 Agent 协作规则到 `docs/zh/agent_workflow.md`
-- [ ] 创建 GitHub issue 后同步到 `requirements/<issue-id>/` 设计三件套
+- [x] 创建需求 1 设计三件套到 `requirements/1/`
+- [x] 创建验收清单入口到 `docs/zh/acceptance_checklist.md`
 
 ## Auth
 
@@ -52,28 +53,28 @@
 
 - [x] 搭建 SwiftUI iPhone App
 - [ ] 接入共享 Swift Package
-- [x] 实现 Apple 登录入口
+- [ ] 接入真实 Apple 登录流程
 - [x] 实现自然语言输入框
 - [x] 支持系统键盘听写输入同一输入框
-- [x] 实现 AI 草稿预览和编辑确认
-- [x] 实现任务列表
-- [x] 实现任务完成和删除交互
-- [x] 实现同步状态展示
-- [x] 实现 iPhone 主屏 Widget
-- [x] Widget 展示最重要任务
-- [x] Widget 展示最紧急任务
-- [x] Widget 点击进入 App
+- [ ] 接入真实 AI 草稿预览和编辑确认
+- [ ] 接入真实任务列表
+- [ ] 接入真实任务完成和删除交互
+- [ ] 接入真实同步状态展示
+- [ ] 实现 iPhone 主屏 Widget
+- [ ] Widget 展示真实最重要任务
+- [ ] Widget 展示真实最紧急任务
+- [ ] Widget 点击进入 App
 - [ ] 添加 Widget 空状态验证
 
 ## macOS
 
 - [x] 搭建 macOS 菜单栏 App
 - [ ] 接入共享 Swift Package
-- [x] 实现 Apple 登录入口
-- [x] 展示任务列表
-- [x] 支持快速新增任务
-- [x] 支持完成任务
-- [x] 展示同步状态
+- [ ] 接入真实 Apple 登录流程
+- [ ] 展示真实任务列表
+- [ ] 接入真实快速新增任务
+- [ ] 接入真实完成任务
+- [ ] 展示真实同步状态
 - [ ] 验证与 iPhone 端同账号同步
 
 ## Server
@@ -85,7 +86,7 @@
 - [x] 实现 JWT 中间件
 - [x] 实现用户隔离查询
 - [x] 实现 DeepSeek 调用超时和错误处理
-- [ ] 编写 systemd 部署说明
+- [x] 编写 systemd 部署说明
 - [x] 添加 API 集成测试
 
 ## Testing

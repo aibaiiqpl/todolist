@@ -1,6 +1,16 @@
 # macOS 菜单栏 App
 
-这是 AI 待办 App 第一版 macOS 端骨架，入口是 SwiftUI `MenuBarExtra`。当前仓库尚未提供 `shared/swift` 包，因此本目录先用 `TodoServicing` 协议和 `PlaceholderTodoService` 占位，后续共享包稳定后在 `apps/macos/Sources/TodoMenuBarApp/Infrastructure/` 内替换适配实现即可。
+macOS 端是 SwiftUI `MenuBarExtra` 应用，默认接入 `../../shared/swift` 中的 `TodoShared` 包。任务本地存储使用 `FileTodoLocalStorage`，快速新增会通过 `LocalTodoRepository` 创建本地任务并写入同步队列，同步由 `TodoSyncEngine` 调用后端协议。
+
+## 后端地址
+
+运行前配置真实服务地址：
+
+```bash
+export TODO_API_BASE_URL="https://your-server.example.com"
+```
+
+未配置时应用使用 `https://todo-api.example.invalid` 占位地址，登录或同步请求会失败。替换为真实服务器后，Apple 登录会把 `AuthenticationServices` 返回的 identity token 发送到 `/auth/apple`。
 
 ## 打开方式
 
@@ -15,20 +25,22 @@ open Package.swift
 
 ## 当前范围
 
-- Apple 登录入口占位：使用 `SignInWithAppleButton`，成功回调后进入占位会话。
-- 任务列表：展示本地占位任务。
-- 快速新增：向占位数据源新增任务。
-- 完成任务：切换任务完成状态。
-- 同步状态：展示同步中、待同步数、最近同步时间和错误状态。
+- Apple 登录：使用 `SignInWithAppleButton` 获取 identity token，并调用真实 `/auth/apple`。
+- 任务列表：展示 shared 本地仓库中的未删除任务。
+- 快速新增：创建本地任务并入队等待同步。
+- 完成任务：通过 shared 本地仓库更新任务并入队。
+- 同步状态：调用 shared sync engine，失败时保留本地队列等待重试。
 
 第一版不包含 macOS 桌面 Widget。
 
-## Linux 验证
+## Linux 静态验证
 
 Linux 环境无法编译 AppKit/SwiftUI。可执行的静态验证：
 
 ```bash
-cd apps/macos
-swift package dump-package
-find Sources/TodoMenuBarApp -type f | sort
+cd /home/agbox/workspace/todolist
+rg -n "import TodoShared" apps/macos
+rg -n "PlaceholderTodoService|authenticateWithApplePlaceholder" apps/macos || true
+rg -n "TodoShared|../../shared/swift" apps/macos/Package.swift
+rg -n "Widget|widget" apps/macos || true
 ```

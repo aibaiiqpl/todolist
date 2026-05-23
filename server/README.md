@@ -18,6 +18,43 @@ go run ./cmd/server
 
 `ADDR` is optional and defaults to `:8080`. `DEEPSEEK_MODEL` is optional and defaults to `deepseek-chat`.
 
+## systemd 部署示例
+
+长期持久服务配置统一归 env_tools 管理。本仓库只提供应用级 unit 示例和环境变量说明，实际启停、重启策略和机器级编排应在 env_tools 中落地。
+
+示例环境文件 `/etc/todolist/server.env`：
+
+```env
+ADDR=:8080
+DATABASE_URL=postgres://user:pass@localhost:5432/todolist?sslmode=disable
+JWT_SECRET=change-me
+APPLE_BUNDLE_ID=com.example.todolist
+DEEPSEEK_API_KEY=...
+DEEPSEEK_MODEL=deepseek-chat
+```
+
+示例 unit：
+
+```ini
+[Unit]
+Description=TodoList API server
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=todolist
+WorkingDirectory=/opt/todolist/server
+EnvironmentFile=/etc/todolist/server.env
+ExecStart=/opt/todolist/server/todolist-server
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+```
+
+部署前先应用 `migrations/001_init.sql`，并确保 `APPLE_BUNDLE_ID` 与客户端 Sign in with Apple 的 audience 一致。
+
 ## API
 
 - `POST /auth/apple`
