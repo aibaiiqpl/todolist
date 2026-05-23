@@ -30,6 +30,31 @@ func TestUnauthenticatedCannotCallAI(t *testing.T) {
 	}
 }
 
+func TestUnauthenticatedCannotCallTaskEndpoints(t *testing.T) {
+	handler, _, _ := newTestAPI(t, &fakeOrganizer{})
+
+	tests := []struct {
+		name   string
+		method string
+		path   string
+		body   string
+	}{
+		{name: "changes", method: http.MethodGet, path: "/tasks/changes?since_version=0"},
+		{name: "sync", method: http.MethodPost, path: "/tasks/sync", body: `{"operations":[]}`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp := httptest.NewRecorder()
+			req := httptest.NewRequest(tt.method, tt.path, bytes.NewBufferString(tt.body))
+			handler.ServeHTTP(resp, req)
+			if resp.Code != http.StatusUnauthorized {
+				t.Fatalf("status = %d, want %d", resp.Code, http.StatusUnauthorized)
+			}
+		})
+	}
+}
+
 func TestAppleAuthUsesVerifierAndIssuesJWT(t *testing.T) {
 	handler, signer, _ := newTestAPI(t, &fakeOrganizer{})
 

@@ -4,19 +4,19 @@
 
 ## 状态表
 
-| 层级 | 状态 | 证据 |
-| --- | --- | --- |
-| L1 后端接口与安全 | PASS | `cd server && go test ./... && go vet ./...` |
-| L1 客户端静态接入 | PASS | `rg` 检查 iOS/macOS 引用 `TodoShared` 且无占位服务默认路径 |
-| L2 Apple 平台构建 | BLOCKED | 当前 Linux 环境无 `swift`、`xcodebuild` |
-| L2 跨端实机同步 | BLOCKED | 需要 macOS/Xcode、真实 Bundle ID、App Group、Apple Developer Team 和已部署后端 |
-| L3 人工体验验收 | PENDING | 待 L2 环境具备后执行 |
+| ID | 层级 | 验收项 | 验证方式 | 当前状态 | 证据 |
+| --- | --- | --- | --- | --- | --- |
+| A1 | L1 | 后端接口、安全和用户隔离 | `cd server && go test ./... && go vet ./...` | PASS | 当前环境已执行通过 |
+| A2 | L1 | iOS/macOS 静态接入 shared 和真实 API client | 见下方静态命令 | PASS | 当前环境已执行通过 |
+| A3 | L1 | shared Swift 自动化测试 | `cd shared/swift && swift test` | BLOCKED | 当前 Linux 环境无 `swift` |
+| A4 | L2 | iOS App 和 Widget 构建 | `xcodebuild ... build` | BLOCKED | 当前 Linux 环境无 Xcode |
+| A5 | L2 | macOS 菜单栏 App 构建 | `cd apps/macos && swift build` | BLOCKED | 当前 Linux 环境无 `swift` |
+| A6 | L2 | 同账号跨端同步和 Widget 实机展示 | iPhone/macOS + 已部署后端手工验收 | BLOCKED | 需要真实 Apple Team、Bundle ID、App Group、后端 |
+| A7 | L3 | 人工范围确认 | 人工按产品计划确认 | PENDING | 待 L2 环境具备后执行 |
 
-## L1：可在当前 Linux 环境执行
+## L1：当前环境可执行
 
-### 后端测试
-
-命令：
+### A1 后端接口、安全和用户隔离
 
 ```bash
 cd server
@@ -31,14 +31,12 @@ go vet ./...
 - Apple identity token verifier 覆盖有效 token、错误 audience、未知 kid、签名失败和过期 token。
 - DeepSeek 返回非法 JSON 时后端返回错误，不保存任务。
 
-### 客户端静态接入
-
-命令：
+### A2 客户端静态接入
 
 ```bash
-rg -n "PlaceholderTodoBackendService|PlaceholderTodoService|placeholder-ios|placeholder-apple" apps/ios apps/macos
-rg -n "import TodoShared|URLSessionTodoAPIClient|LocalTodoRepository|TodoSyncEngine" apps/ios apps/macos
-rg -n "replace-with-real|example.invalid|group.com.example.todolist|todo-api.example.invalid" apps/ios apps/macos
+! rg -n "PlaceholderTodoBackendService|PlaceholderTodoService|placeholder-ios|placeholder-apple" apps/ios apps/macos --glob '!**/README.md'
+rg -n "import TodoShared|URLSessionTodoAPIClient|LocalTodoRepository|TodoSyncEngine" apps/ios apps/macos --glob '!**/README.md'
+! rg -n "replace-with-real|example.invalid|group.com.example.todolist|todo-api.example.invalid|com.example.todolist" apps/ios apps/macos --glob '!**/README.md'
 uv run --quiet python -c "import plistlib, pathlib; [plistlib.load(open(p, 'rb')) for p in pathlib.Path('apps/ios').rglob('*.plist')]; [plistlib.load(open(p, 'rb')) for p in pathlib.Path('apps/ios').rglob('*.entitlements')]"
 ```
 
@@ -47,24 +45,35 @@ uv run --quiet python -c "import plistlib, pathlib; [plistlib.load(open(p, 'rb')
 - iOS/macOS 默认运行路径不使用占位服务。
 - iOS/macOS 均引用 shared Swift 核心。
 - 客户端没有 DeepSeek API key。
-- 默认配置不包含示例后端地址或示例 App Group。
+- 默认配置不包含示例后端地址、示例 Bundle ID 或示例 App Group。
+
+### A3 shared Swift 自动化测试
+
+```bash
+cd shared/swift
+swift test
+```
+
+通过标准：
+
+- 本地队列生成、同步成功清理、同步失败保留、最后写入优先和 Widget 排序通过。
+- AI 草稿优先级协议接受后端定义的 `1..5`。
 
 ## L2：需要 macOS/Xcode/真实配置
+
+配置：
+
+- `TODO_API_BASE_URL` 指向已部署后端。
+- `APP_GROUP_IDENTIFIER`、`TODO_APP_BUNDLE_ID`、`TODO_WIDGET_BUNDLE_ID`、`APPLE_DEVELOPMENT_TEAM` 使用真实 Apple Developer 配置。
+- 后端配置 `DATABASE_URL`、`JWT_SECRET`、`APPLE_BUNDLE_ID`、`DEEPSEEK_API_KEY`。
 
 命令：
 
 ```bash
-swift --version
-cd shared/swift && swift test
 xcodebuild -project apps/ios/TodoList.xcodeproj -target TodoList -destination 'generic/platform=iOS Simulator' build
-cd apps/macos && swift build
+cd apps/macos
+swift build
 ```
-
-手工配置：
-
-- `TODO_API_BASE_URL` 指向已部署后端。
-- `APP_GROUP_IDENTIFIER`、Bundle Identifier、Team 使用真实 Apple Developer 配置。
-- 后端配置 `DATABASE_URL`、`JWT_SECRET`、`APPLE_BUNDLE_ID`、`DEEPSEEK_API_KEY`。
 
 通过标准：
 
