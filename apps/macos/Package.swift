@@ -17,7 +17,7 @@ let package = Package(
         .executableTarget(
             name: "TodoMenuBarApp",
             dependencies: [
-                "TodoShared"
+                .product(name: "TodoShared", package: "swift")
             ]
         )
     ]
