@@ -1,0 +1,30 @@
+name: Apple Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  apple-build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Swift shared tests
+        run: cd shared/swift && swift test
+
+      - name: macOS build
+        run: cd apps/macos && swift build
+
+      - name: iOS build
+        run: |
+          xcodebuild \
+            -project apps/ios/TodoList.xcodeproj \
+            -scheme TodoList \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            TODO_API_BASE_URL=http://127.0.0.1:8080 \
+            APP_GROUP_IDENTIFIER=group.local.todolist \
+            TODO_APP_BUNDLE_ID=local.todolist.ios \
+            TODO_WIDGET_BUNDLE_ID=local.todolist.ios.widget \
+            APPLE_DEVELOPMENT_TEAM= \
+            build
