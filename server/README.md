@@ -12,10 +12,11 @@ JWT_SECRET='change-me' \
 APPLE_BUNDLE_IDS='com.yourcompany.todolist.ios,com.yourcompany.todolist.macos' \
 DEEPSEEK_API_KEY='...' \
 DEEPSEEK_MODEL='deepseek-chat' \
+DEEPSEEK_BASE_URL='https://api.deepseek.com/chat/completions' \
 go run ./cmd/server
 ```
 
-This creates `server/todolist.sqlite` when run from the `server` directory. `ADDR` is optional and defaults to `:8080`. `SQLITE_PATH` is optional and defaults to `todolist.sqlite`. `DEEPSEEK_MODEL` is optional and defaults to `deepseek-chat`. `APPLE_BUNDLE_IDS` is a comma-separated list of Sign in with Apple audiences; `APPLE_BUNDLE_ID` is still accepted for a single client.
+This creates `server/todolist.sqlite` when run from the `server` directory. `ADDR` is optional and defaults to `:8080`. `SQLITE_PATH` is optional and defaults to `todolist.sqlite`. `DEEPSEEK_MODEL` is optional and defaults to `deepseek-chat`. `DEEPSEEK_BASE_URL` is optional and defaults to DeepSeek's chat completions endpoint; set it to `https://integrate.api.nvidia.com/v1/chat/completions` when using NVIDIA's compatible API. NVIDIA model IDs include the provider prefix, for example `deepseek-ai/deepseek-v4-flash`. `APPLE_BUNDLE_IDS` is a comma-separated list of Sign in with Apple audiences; `APPLE_BUNDLE_ID` is still accepted for a single client.
 
 To use Postgres later, set `DATABASE_DRIVER=postgres`, apply `migrations/001_init.sql`, and provide `DATABASE_URL`.
 
@@ -33,6 +34,7 @@ JWT_SECRET=change-me
 APPLE_BUNDLE_IDS=com.yourcompany.todolist.ios,com.yourcompany.todolist.macos
 DEEPSEEK_API_KEY=...
 DEEPSEEK_MODEL=deepseek-chat
+DEEPSEEK_BASE_URL=https://api.deepseek.com/chat/completions
 ```
 
 示例 unit：

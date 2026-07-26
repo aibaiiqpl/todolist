@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -19,6 +20,7 @@ var (
 )
 
 const DefaultDeepSeekModel = "deepseek-chat"
+const DefaultDeepSeekBaseURL = "https://api.deepseek.com/chat/completions"
 
 type Draft struct {
 	Title      string     `json:"title"`
@@ -44,15 +46,26 @@ func NewDeepSeekClientFromEnv() (*DeepSeekClient, error) {
 	if model == "" {
 		model = DefaultDeepSeekModel
 	}
-	return newDeepSeekClient(os.Getenv("DEEPSEEK_API_KEY"), model, nil)
+	baseURL := os.Getenv("DEEPSEEK_BASE_URL")
+	if baseURL == "" {
+		baseURL = DefaultDeepSeekBaseURL
+	}
+	return newDeepSeekClient(os.Getenv("DEEPSEEK_API_KEY"), model, baseURL, nil)
 }
 
-func newDeepSeekClient(apiKey string, model string, httpClient *http.Client) (*DeepSeekClient, error) {
+func newDeepSeekClient(apiKey string, model string, baseURL string, httpClient *http.Client) (*DeepSeekClient, error) {
 	if apiKey == "" {
 		return nil, ErrMissingAPIKey
 	}
 	if model == "" {
 		model = DefaultDeepSeekModel
+	}
+	if baseURL == "" {
+		baseURL = DefaultDeepSeekBaseURL
+	}
+	parsedURL, err := url.ParseRequestURI(baseURL)
+	if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+		return nil, fmt.Errorf("deepseek base url is invalid")
 	}
 	if httpClient == nil {
 		httpClient = &http.Client{Timeout: 20 * time.Second}
@@ -60,7 +73,7 @@ func newDeepSeekClient(apiKey string, model string, httpClient *http.Client) (*D
 	return &DeepSeekClient{
 		apiKey:     apiKey,
 		model:      model,
-		baseURL:    "https://api.deepseek.com/chat/completions",
+		baseURL:    baseURL,
 		httpClient: httpClient,
 	}, nil
 }

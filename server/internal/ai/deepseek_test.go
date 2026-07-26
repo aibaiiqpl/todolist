@@ -11,7 +11,7 @@ import (
 )
 
 func TestDeepSeekInvalidJSONReturnsError(t *testing.T) {
-	client, err := newDeepSeekClient("test-key", DefaultDeepSeekModel, &http.Client{
+	client, err := newDeepSeekClient("test-key", DefaultDeepSeekModel, DefaultDeepSeekBaseURL, &http.Client{
 		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 			return &http.Response{
 				StatusCode: http.StatusOK,
@@ -31,7 +31,7 @@ func TestDeepSeekInvalidJSONReturnsError(t *testing.T) {
 }
 
 func TestDeepSeekParsesMultipleTasksWithDateAndPriority(t *testing.T) {
-	client, err := newDeepSeekClient("test-key", DefaultDeepSeekModel, &http.Client{
+	client, err := newDeepSeekClient("test-key", DefaultDeepSeekModel, DefaultDeepSeekBaseURL, &http.Client{
 		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 			return &http.Response{
 				StatusCode: http.StatusOK,
@@ -64,7 +64,7 @@ func TestDeepSeekParsesMultipleTasksWithDateAndPriority(t *testing.T) {
 }
 
 func TestDeepSeekParsesTaskWithoutDate(t *testing.T) {
-	client, err := newDeepSeekClient("test-key", DefaultDeepSeekModel, &http.Client{
+	client, err := newDeepSeekClient("test-key", DefaultDeepSeekModel, DefaultDeepSeekBaseURL, &http.Client{
 		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 			return &http.Response{
 				StatusCode: http.StatusOK,
@@ -91,7 +91,7 @@ func TestDeepSeekParsesTaskWithoutDate(t *testing.T) {
 }
 
 func TestDeepSeekMissingAPIKeyReturnsError(t *testing.T) {
-	_, err := newDeepSeekClient("", DefaultDeepSeekModel, nil)
+	_, err := newDeepSeekClient("", DefaultDeepSeekModel, DefaultDeepSeekBaseURL, nil)
 	if !errors.Is(err, ErrMissingAPIKey) {
 		t.Fatalf("error = %v, want %v", err, ErrMissingAPIKey)
 	}
@@ -110,9 +110,29 @@ func TestNewDeepSeekClientFromEnvUsesModelOverride(t *testing.T) {
 	}
 }
 
+func TestNewDeepSeekClientFromEnvUsesBaseURLOverride(t *testing.T) {
+	t.Setenv("DEEPSEEK_API_KEY", "test-key")
+	t.Setenv("DEEPSEEK_BASE_URL", "https://integrate.api.nvidia.com/v1/chat/completions")
+
+	client, err := NewDeepSeekClientFromEnv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if client.baseURL != "https://integrate.api.nvidia.com/v1/chat/completions" {
+		t.Fatalf("baseURL = %q, want NVIDIA endpoint", client.baseURL)
+	}
+}
+
+func TestNewDeepSeekClientRejectsInvalidBaseURL(t *testing.T) {
+	_, err := newDeepSeekClient("test-key", DefaultDeepSeekModel, "://bad-url", nil)
+	if err == nil {
+		t.Fatal("error = nil, want invalid base url error")
+	}
+}
+
 func TestDeepSeekUsesConfiguredModel(t *testing.T) {
 	var gotModel string
-	client, err := newDeepSeekClient("test-key", "custom-model", &http.Client{
+	client, err := newDeepSeekClient("test-key", "custom-model", DefaultDeepSeekBaseURL, &http.Client{
 		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 			var body struct {
 				Model string `json:"model"`

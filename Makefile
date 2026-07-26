@@ -1,5 +1,8 @@
 SHELL := /bin/bash
 
+SERVER_ENV_FILE ?= server/.env.local
+-include $(SERVER_ENV_FILE)
+
 IOS_PROJECT := apps/ios/TodoList.xcodeproj
 IOS_SCHEME := TodoList
 IOS_DESTINATION := generic/platform=iOS Simulator
@@ -12,8 +15,9 @@ APPLE_DEVELOPMENT_TEAM ?=
 SERVER_ADDR ?= :8080
 SERVER_JWT_SECRET ?= local-dev-secret
 SERVER_APPLE_BUNDLE_IDS ?= local.todolist.ios,local.todolist.macos
-SERVER_DEEPSEEK_API_KEY ?= local-dev-key
-SERVER_DEEPSEEK_MODEL ?= deepseek-chat
+SERVER_DEEPSEEK_API_KEY ?= $(or $(DEEPSEEK_API_KEY),local-dev-key)
+SERVER_DEEPSEEK_MODEL ?= $(or $(DEEPSEEK_MODEL),deepseek-chat)
+SERVER_DEEPSEEK_BASE_URL ?= $(DEEPSEEK_BASE_URL)
 SQLITE_PATH ?= todolist.sqlite
 
 .PHONY: help check server-test server-vet swift-test macos-build ios-build apple-build clean
@@ -40,7 +44,7 @@ server-vet:
 	cd server && go vet ./...
 
 server-run:
-	cd server && \
+	@cd server && \
 		ADDR="$(SERVER_ADDR)" \
 		DATABASE_DRIVER=sqlite \
 		SQLITE_PATH="$(SQLITE_PATH)" \
@@ -48,6 +52,7 @@ server-run:
 		APPLE_BUNDLE_IDS="$(SERVER_APPLE_BUNDLE_IDS)" \
 		DEEPSEEK_API_KEY="$(SERVER_DEEPSEEK_API_KEY)" \
 		DEEPSEEK_MODEL="$(SERVER_DEEPSEEK_MODEL)" \
+		DEEPSEEK_BASE_URL="$(SERVER_DEEPSEEK_BASE_URL)" \
 		go run ./cmd/server
 
 swift-test:
